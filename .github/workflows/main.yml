@@ -27,19 +27,16 @@ jobs:
           git clone https://github.com/KernelSU-Next/KernelSU-Next.git KernelSU-Next
           cd KernelSU-Next
           git checkout v3.3.0
-          # 拉取内核补丁脚本
           git submodule update --init --recursive
 
-      - name: Apply KernelSU-Next patch to kernel
+      - name: Integrate KernelSU‑Next into kernel source
         run: |
-          # 进入内核根目录
-          export KERNEL_ROOT=$PWD
+          export KERNEL_ROOT="$PWD"
           cd KernelSU-Next
-          # 使用 kpatch 给内核源码打KernelSU-Next补丁（非GKI静态集成）
-          bash scripts/kpatch.sh ${KERNEL_ROOT}
-        # ⚠️ 如果4.4打补丁失败，会输出冲突，需要手动解决补丁冲突
+          # 重点：在KSU‑Next目录运行 integrate_kernel.sh，传入内核源码路径
+          bash scripts/integrate_kernel.sh "${KERNEL_ROOT}"
 
-      - name: Download aarch64‑linux‑gnu‑gcc 交叉工具链
+      - name: Download aarch64‑linux‑gnu‑gcc 4.9 toolchain
         run: |
           git clone https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-gnu-4.9.git gcc-aarch64
           echo "$PWD/gcc-aarch64/bin" >> $GITHUB_PATH
@@ -50,8 +47,7 @@ jobs:
           export CROSS_COMPILE=aarch64-linux-gnu-
           make oneplus5_defconfig
 
-      # 关键：内核配置开启KernelSU-Next相关选项
-      - name: Enable KernelSU configs
+      - name: Set KernelSU‑Next config (4.4 NON‑GKI, disable LKM)
         run: |
           ./scripts/config --enable KERNELSU
           ./scripts/config --enable KERNELSU_SU
@@ -74,5 +70,5 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: OnePlus5T‑Kernel‑KernelSU‑Next
+          name: OnePlus5T‑Kernel‑KSU‑Next
           path: kernel.zip
