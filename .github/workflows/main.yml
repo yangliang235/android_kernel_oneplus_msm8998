@@ -22,14 +22,17 @@ jobs:
           sudo apt update
           sudo apt install -y build-essential libssl-dev libelf-dev bison flex libncurses-dev git wget zip unzip curl python3
 
-      # ========== KernelSU‑Next legacy 4.4集成，内核根目录执行，不要git clone整个仓库 ==========
       - name: Integrate KernelSU‑Next legacy mode for Linux4.4 non‑GKI
         run: |
           curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/v3.3.0/kernel/setup.sh" | bash -s legacy
 
-      - name: Download aarch64‑linux‑gnu‑gcc4.9 toolchain
+      # 替换git clone，直接下载工具链压缩包，规避github https认证报错
+      - name: Download aarch64-linux-gnu‑4.9 prebuilt toolchain
         run: |
-          git clone https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-gnu-4.9.git gcc-aarch64
+          wget -q https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-gnu-4.9/archive/refs/heads/lineage-18.1.zip -O gcc.zip
+          unzip -q gcc.zip
+          mv android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-gnu-4.9-lineage-18.1 gcc-aarch64
+          rm -f gcc.zip
           echo "$PWD/gcc-aarch64/bin" >> $GITHUB_PATH
 
       - name: Generate base defconfig
@@ -38,7 +41,6 @@ jobs:
           export CROSS_COMPILE=aarch64-linux-gnu-
           make oneplus5_defconfig
 
-      # 4.4 legacy kprobe模式关键配置：开启kprobe，关闭LKM，静态编译KSU
       - name: Set kernel config for KSU‑Next legacy
         run: |
           ./scripts/config --enable KERNELSU
