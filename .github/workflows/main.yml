@@ -17,17 +17,19 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install deps + GCC 4.9 arm64 cross compiler from PPA
+      - name: Install basic build dependencies
         run: |
           sudo apt update
-          sudo apt install -y build-essential libssl-dev libelf-dev bison flex libncurses-dev git wget zip unzip curl python3 software-properties-common
-          # 添加gcc4.9 PPA
-          sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
-          sudo apt update
-          sudo apt install -y aarch64-linux-gnu-gcc-4.9 aarch64-linux-gnu-g++-4.9
-          # 创建符号链接，让CROSS_COMPILE=aarch64-linux-gnu-指向4.9版本
-          sudo ln -sf /usr/bin/aarch64-linux-gnu-gcc-4.9 /usr/bin/aarch64-linux-gnu-gcc
-          sudo ln -sf /usr/bin/aarch64-linux-gnu-g++-4.9 /usr/bin/aarch64-linux-gnu-g++
+          sudo apt install -y build-essential libssl-dev libelf-dev bison flex libncurses-dev git wget xz-utils zip unzip curl python3
+
+      # 直接下载LineOS aarch64‑linux‑gnu‑4.9 tar.xz，镜像源，规避github限流
+      - name: Fetch Lineage aarch64‑linux‑gnu‑4.9 toolchain
+        run: |
+          wget --no-check-certificate https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-gnu-4.9/releases/download/lineage‑18.1/aarch64-linux-gnu-4.9.tar.xz
+          mkdir -p gcc-aarch64
+          tar -Jxf aarch64-linux-gnu-4.9.tar.xz -C gcc-aarch64 --strip-components=1
+          rm -f aarch64-linux-gnu-4.9.tar.xz
+          echo "$PWD/gcc-aarch64/bin" >> $GITHUB_PATH
 
       - name: Integrate KernelSU‑Next legacy mode for Linux4.4 non‑GKI
         run: |
