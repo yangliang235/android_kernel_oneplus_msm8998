@@ -17,23 +17,21 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install build dependencies
+      - name: Install deps + GCC 4.9 arm64 cross compiler from PPA
         run: |
           sudo apt update
-          sudo apt install -y build-essential libssl-dev libelf-dev bison flex libncurses-dev git wget zip unzip curl python3
+          sudo apt install -y build-essential libssl-dev libelf-dev bison flex libncurses-dev git wget zip unzip curl python3 software-properties-common
+          # 添加gcc4.9 PPA
+          sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+          sudo apt update
+          sudo apt install -y aarch64-linux-gnu-gcc-4.9 aarch64-linux-gnu-g++-4.9
+          # 创建符号链接，让CROSS_COMPILE=aarch64-linux-gnu-指向4.9版本
+          sudo ln -sf /usr/bin/aarch64-linux-gnu-gcc-4.9 /usr/bin/aarch64-linux-gnu-gcc
+          sudo ln -sf /usr/bin/aarch64-linux-gnu-g++-4.9 /usr/bin/aarch64-linux-gnu-g++
 
       - name: Integrate KernelSU‑Next legacy mode for Linux4.4 non‑GKI
         run: |
           curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/v3.3.0/kernel/setup.sh" | bash -s legacy
-
-      # 替换git clone，直接下载工具链压缩包，规避github https认证报错
-      - name: Download aarch64-linux-gnu‑4.9 prebuilt toolchain
-        run: |
-          wget -q https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-gnu-4.9/archive/refs/heads/lineage-18.1.zip -O gcc.zip
-          unzip -q gcc.zip
-          mv android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-gnu-4.9-lineage-18.1 gcc-aarch64
-          rm -f gcc.zip
-          echo "$PWD/gcc-aarch64/bin" >> $GITHUB_PATH
 
       - name: Generate base defconfig
         run: |
@@ -41,7 +39,7 @@ jobs:
           export CROSS_COMPILE=aarch64-linux-gnu-
           make oneplus5_defconfig
 
-      - name: Set kernel config for KSU‑Next legacy
+      - name: Set kernel config for KSU‑Next legacy(kprobe mode)
         run: |
           ./scripts/config --enable KERNELSU
           ./scripts/config --enable KERNELSU_SU
